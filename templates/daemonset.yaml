@@ -1,0 +1,72 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: {{ template "kube-keepalived-vip.name" . }}
+    chart: {{ template "kube-keepalived-vip.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  name: {{ template "kube-keepalived-vip.fullname" . }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "kube-keepalived-vip.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      {{- if .Values.daemonset.useHostNetwork }}
+      hostNetwork: {{ .Values.daemonset.useHostNetwork }}
+      {{- end }}
+      serviceAccount: {{ template "kube-keepalived-vip.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /lib/modules
+              name: modules
+              readOnly: true
+            - mountPath: /dev
+              name: dev
+          # use downward API
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          # to use unicast
+          args:
+          - --services-configmap={{ .Release.Namespace }}/{{ template "kube-keepalived-vip.fullname" . }}
+          {{- if .Values.daemonset.useUnicast }}
+          - --use-unicast={{ .Values.daemonset.useUnicast }}
+          {{- end }}
+          {{- if .Values.daemonset.vrrpVersion }}
+          - --vrrp-version={{ .Values.daemonset.vrrpVersion }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        - name: modules
+          hostPath:
+            path: /lib/modules
+        - name: dev
+          hostPath:
+            path: /dev
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

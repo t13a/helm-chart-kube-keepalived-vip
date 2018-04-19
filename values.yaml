@@ -1,0 +1,33 @@
+image:
+  repository: k8s.gcr.io/kube-keepalived-vip
+  tag: 0.11
+  pullPolicy: IfNotPresent
+
+daemonset: {}
+  # useHostNetwork: false
+  # useUnicast: false
+  # vrrpVersion: 2
+
+services: {}
+  # 10.4.0.50: default/echoheaders
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name:
+
+resources: {}
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
